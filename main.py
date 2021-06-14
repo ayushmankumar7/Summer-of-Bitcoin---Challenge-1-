@@ -14,6 +14,35 @@ def parse_mempool_csv():
     with open('mempool.csv') as f:
         return([MempoolTransaction(*line.strip().split(',')) for line in f.readlines()[1:]])
 
+def check_parent(parents, history):
+    flag = True
+    if ';' in parents:
+        x = parents.split(";")
+    else:
+        x = [parents]
+    for parent in x:
+        if parent in history:
+            flag = True 
+        else:
+            return False  
+    return flag
+
+
+def get_valid_tx(mempool):
+    history = []
+    corr_fees = []
+    t_fee = 0 
+    t_weight = 0 
+    MAX = 4000000
+    for transaction in mempool:
+        if transaction.parents == "":
+            history.append(transaction)
+        elif check_parent(transaction.parents, history):  
+            history.append(transaction)
+        else:
+            continue
+    return history 
+
 
 def calc(x):
     history = []
@@ -54,7 +83,8 @@ def calc(x):
 
 if __name__ == '__main__':
     x = parse_mempool_csv()
-    calc(x)
-
+    # calc(x)
+    valid_transactions = get_valid_tx(x)
+    print("Number of Valid Transaction :", len(valid_transactions))
     # with open("mempool.csv") as f:
         # print([f.readlines()[0]])

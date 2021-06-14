@@ -89,6 +89,6 @@ if __name__ == '__main__':
     print("Final Weight :", cum_weight)
 
     final_file = open("block.txt", "w")
-    final_file.writelines(valid_transactions[initial_position:final_position+1])
+    final_file.writelines('\n'.join(valid_transactions[initial_position:final_position+1])+ '\n')
 
     final_file.close()

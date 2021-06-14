@@ -6,20 +6,20 @@ class MempoolTransaction():
         # TODO: add code to parse weight and parents fields
         self.weight = int(weight) 
         self.parents = parents
-    
-    
 
 def parse_mempool_csv():
     """Parse the CSV file and return a list of MempoolTransactions."""
     with open('mempool.csv') as f:
         return([MempoolTransaction(*line.strip().split(',')) for line in f.readlines()[1:]])
 
+# Checks if all parents are present before TXID
 def check_parent(parents, history):
     flag = True
     if ';' in parents:
-        x = parents.split(";")
+        x = parents.split(";") 
     else:
         x = [parents]
+    
     for parent in x:
         if parent in history:
             flag = True 
@@ -27,64 +27,68 @@ def check_parent(parents, history):
             return False  
     return flag
 
-
+# Returns all valid transactions 
 def get_valid_tx(mempool):
     history = []
-    corr_fees = []
-    t_fee = 0 
-    t_weight = 0 
-    MAX = 4000000
+    fee_h = []
+    weight_h = []
     for transaction in mempool:
         if transaction.parents == "":
-            history.append(transaction)
-        elif check_parent(transaction.parents, history):  
-            history.append(transaction)
+            history.append(transaction.txid)
+            fee_h.append(transaction.fee)
+            weight_h.append(transaction.weight)
+        elif check_parent(transaction.parents, history) == True:  
+            history.append(transaction.txid)
+            fee_h.append(transaction.fee)
+            weight_h.append(transaction.weight)
         else:
             continue
-    return history 
+    return history, fee_h, weight_h 
 
-
-def calc(x):
-    history = []
-    t_fee = 0
-    t_weight = 0
-    MAX = 4000000
-    for i in x:
-        if t_weight < MAX:       
-            if i.parents == "":
-                
-                if (t_weight + i.weight) < MAX:
-                    t_weight += i.weight
-                    t_fee += i.fee
-                else:
-                    break   
-                history.append(i.txid)
-            elif i.parents in history:
-                 
-                if (t_weight + i.weight) < MAX: 
-                    t_weight += i.weight
-                    t_fee += i.fee
-                else:
-                    break  
-                history.append(i.txid)
-            else:
-                continue            
-        else:
-            break 
-        print(f"TXID: {i.txid}, total_fee: {t_fee}, total_weight: {t_weight}")
-    print(len(history))
-
-
+# Calculate Final Block
+def calc(valid_tx, fees, weights):  
     
+    MAX = 4000000
+    current_sum = 0
+    max_sum = 0
 
+    current_weight = 0
+    initial_position = 0 
+    final_position = 0
 
+    for i in range(len(fees)):
+        current_sum += fees[i]
+        
+        if current_sum > max_sum and current_weight < MAX:
+            if current_weight + weights[i] < MAX:
+                current_weight += weights[i]
+            
+                max_sum = current_sum
+                initial_position = i 
+        final_position = i 
 
+    return initial_position, final_position, max_sum, current_weight
 
 
 if __name__ == '__main__':
     x = parse_mempool_csv()
     # calc(x)
-    valid_transactions = get_valid_tx(x)
+    valid_transactions, fees, weights = get_valid_tx(x)
     print("Number of Valid Transaction :", len(valid_transactions))
-    # with open("mempool.csv") as f:
-        # print([f.readlines()[0]])
+    print("Fee length :", len(fees))
+    print("Weights length :", len(weights))
+
+
+    initial_position, final_position, cum_sum, cum_weight = calc(valid_transactions, fees, weights)
+    
+    print("\n\n BLOCK \n\n")
+    print(valid_transactions[initial_position:final_position+1])
+    print("Number of Valid Transaction :", len(valid_transactions))
+    print("Number of TXID in BLOCK:", final_position - initial_position)
+    print("Final Fees :",cum_sum)
+    print("Final Weight :", cum_weight)
+
+    final_file = open("block.txt", "w")
+    final_file.writelines(valid_transactions[initial_position:final_position+1])
+
+    final_file.close()

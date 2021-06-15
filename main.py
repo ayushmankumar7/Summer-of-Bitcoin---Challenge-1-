@@ -41,8 +41,7 @@ def get_valid_tx(mempool):
             history.append(transaction.txid)
             fee_h.append(transaction.fee)
             weight_h.append(transaction.weight)
-        else:
-            continue
+        
     return history, fee_h, weight_h 
 
 # Calculate Final Block
@@ -57,17 +56,22 @@ def calc(valid_tx, fees, weights):
     final_position = 0
 
     for i in range(len(fees)):
-        current_sum += fees[i]
-        
-        if current_sum > max_sum and current_weight < MAX:
-            if current_weight + weights[i] < MAX:
-                current_weight += weights[i]
-            
-                max_sum = current_sum
-                initial_position = i 
-        final_position = i 
+        current_weight += weights[i]
+        if current_weight <=MAX:
+            current_sum += fees[i]
+            final_position += 1 
+        else:
+            current_weight -= weights[initial_position]
+            initial_position += 1
+            final_position += 1
+            if (initial_position is not final_position):
+                current_sum -= fees[initial_position]
+                current_sum += fees[final_position]
+            else:
+                current_sum = fees[final_position]
 
-    return initial_position, final_position, max_sum, current_weight
+
+    return initial_position, final_position, current_sum, current_weight
 
 
 if __name__ == '__main__':
@@ -88,7 +92,11 @@ if __name__ == '__main__':
     print("Final Fees :",cum_sum)
     print("Final Weight :", cum_weight)
 
+    print(f"Final Position: {final_position},  Initial Position: {initial_position}")
+
     final_file = open("block.txt", "w")
     final_file.writelines('\n'.join(valid_transactions[initial_position:final_position+1])+ '\n')
 
     final_file.close()
+
+    
